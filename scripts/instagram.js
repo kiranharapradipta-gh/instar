@@ -302,7 +302,7 @@ async function sort (field) {
   const allpostelement = document.querySelector('header > section > ul > li:nth-child(1)')
   
   allpost = parseInt(allpostelement.innerText.split(' ')[0].replace(',', '').replace('.', ''))
-  limit = localStorage.getItem('limit')
+  limit = localStorage.getItem('limit') ?? 999999
   filter = localStorage.getItem('filter')
 
   console.log('Sorting', (limit > allpost ? allpost : limit) + '/' + allpost, 'posts by', field)
