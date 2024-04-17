@@ -107,12 +107,15 @@ async function loopboxes (box, storage=[]) {
 
   if ( !currentbox ) return storage
 
+  let nextbox = currentbox.nextElementSibling
+
   const username = window.location.pathname.split('/')?.[1]
   const boxlink = currentbox.firstElementChild
+
+  if ( !boxlink ) return await loopboxes(nextbox, storage)
+
   const linkhref = boxlink.getAttribute('href')
   const linktype = linkhref.split('/')?.[1]
-
-  let nextbox = currentbox.nextElementSibling
 
   const key = linkhref.split('/')[2]
 
@@ -166,15 +169,20 @@ async function loopboxes (box, storage=[]) {
   
   window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })
 
-  let nextrowafterscroll
+  let nextrowafterscroll, intervalwaitingfornexrow
+  
+  const timeoutfornextrow = setTimeout(_ => clearInterval(intervalwaitingfornexrow), 5000)
   
   await new Promise(resolve => {
-    const intervalwaitingfornexrow = setInterval(_ => {
+    intervalwaitingfornexrow = setInterval(_ => {
       nextrowafterscroll = currentbox.parentElement.nextElementSibling
       if ( nextrowafterscroll ) {
         clearInterval(intervalwaitingfornexrow)
         resolve()
-      } else console.log('Waiting for next row...')
+      } else {
+        console.log('Waiting for next row...')
+        clearTimeout(timeoutfornextrow)
+      }
     }, 1000)
   })
 
@@ -198,8 +206,8 @@ async function populaterowcontainer (data, rowcontainer, row, lcr=0) {
 
   const element = currentdata.element
   const overlay = document.createElement('div')
-  const likes = currentdata.likes.toString().split('').reverse().join('').replace('000', 'K').split('').reverse().join('')
-  const comments = currentdata.comments.toString().split('').reverse().join('').replace('000', 'K').split('').reverse().join('')
+  const likes = currentdata.likes.toString().split('').reverse().join('').replace('000000', 'M').replace('000', 'K').split('').reverse().join('')
+  const comments = currentdata.comments.toString().split('').reverse().join('').replace('000000', 'M').replace('000', 'K').split('').reverse().join('')
 
   overlay.setAttribute('class', '_ac2d')
   overlay.setAttribute('style', "background: rgba(0, 0, 0, 0.3);")
@@ -348,8 +356,8 @@ async function fetchinfo (pathname) {
   
   let [likes, comments] = text.split('name="description" content="')?.[1]?.split('-')?.[0]?.trim()?.split(', ')
 
-  likes = likes.split(' ')?.[0]?.replace(/,/g, '').replace('K', '000')
-  comments = comments.split(' ')?.[0]?.replace(/,/g, '').replace('K', '000')
+  likes = likes.split(' ')?.[0]?.replace(/,/g, '').toLowerCase().replace('k', '000').replace('m', '000000').replace('rb', '000').replace('jt', '000000')
+  comments = comments.split(' ')?.[0]?.replace(/,/g, '').toLowerCase().replace('k', '000').replace('m', '000000').replace('rb', '000').replace('jt', '000000')
 
   if ( !likes ) console.log('Text:', text)
 

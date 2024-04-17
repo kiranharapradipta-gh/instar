@@ -5,7 +5,6 @@ const { get } = require('request-promise')
 const getmediasource = require('./getmediasource')
 const express = require('express')
 const cors = require('cors')
-const resizevideo = require('./resizevideo')
 
 const app = express()
 const ig = new IgApiClient()
