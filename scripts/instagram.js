@@ -112,24 +112,24 @@ async function loopboxes (box, storage=[]) {
   const username = window.location.pathname.split('/')?.[1]
   const boxlink = currentbox.firstElementChild
 
-  if ( !boxlink ) return await loopboxes(nextbox, storage)
+  // if ( !boxlink ) return await loopboxes(nextbox, storage)
 
-  const linkhref = boxlink.getAttribute('href')
-  const linktype = linkhref.split('/')?.[1]
+  const linkhref = boxlink?.getAttribute('href')
+  const linktype = linkhref?.split('/')?.[1]
 
-  const key = linkhref.split('/')[2]
+  const key = linkhref?.split('/')[2]
 
   const localitem = localStorage.getItem(username)
 
   let info
 
-  if ( localitem ) try {
+  if ( key && localitem ) try {
     info = JSON.parse(localitem)[key]
   } catch (e) {
     console.log('Failed to parse local item')
   }
   
-  if ( !info ) try {
+  if ( key && linkhref && !info ) try {
     const newinfodata = await fetchinfo(linkhref)
     if ( !newinfodata ) return await loopboxes(nextbox, storage)
 
@@ -150,12 +150,18 @@ async function loopboxes (box, storage=[]) {
     throw new Error(e)
   }
 
-  const likes = info.likes
-  const comments = info.comments
+  const likes = info?.likes
+  const comments = info?.comments
   
-  if ( (filter == linktype) || !filter || filter == 'all' ) storage.push({ id: key, likes: parseInt(likes), comments: parseInt(comments), element: currentbox })
-
-  console.log('Progress:', storage.length + '/' + (limit > allpost ? allpost : limit), key, 'has', likes, 'likes and', comments, 'comments', info)
+  if ( (likes || comments) && ((filter == linktype) || !filter || filter == 'all') ) {
+    console.log('Progress:', storage.length + '/' + (limit > allpost ? allpost : limit), key, 'has', likes, 'likes and', comments, 'comments', info)
+    storage.push({
+      id: key,
+      likes: parseInt(likes),
+      comments: parseInt(comments),
+      element: currentbox
+    })
+  } else console.log('Skipping this box')
 
   if ( nextbox ) return await loopboxes(nextbox, storage)
 
