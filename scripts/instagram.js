@@ -154,13 +154,13 @@ async function loopboxes (box, storage=[]) {
   const comments = info?.comments
   
   if ( (likes || comments) && ((filter == linktype) || !filter || filter == 'all') ) {
-    console.log('Progress:', storage.length + '/' + (limit > allpost ? allpost : limit), key, 'has', likes, 'likes and', comments, 'comments', info)
     storage.push({
       id: key,
       likes: parseInt(likes),
       comments: parseInt(comments),
       element: currentbox
     })
+    console.log('Progress:', storage.length + '/' + (limit > allpost ? allpost : limit), key, 'has', likes, 'likes and', comments, 'comments', info)
   } else console.log('Skipping this box')
 
   if ( nextbox ) return await loopboxes(nextbox, storage)
@@ -175,26 +175,26 @@ async function loopboxes (box, storage=[]) {
   
   window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })
 
-  let nextrowafterscroll, intervalwaitingfornexrow
+  let nextrowafterscroll, intervalwaitingfornexrow, end
   
-  const timeoutfornextrow = setTimeout(_ => clearInterval(intervalwaitingfornexrow), 5000)
+  const timeoutfornextrow = setTimeout(_ => end = true, 5000)
   
   await new Promise(resolve => {
     intervalwaitingfornexrow = setInterval(_ => {
       nextrowafterscroll = currentbox.parentElement.nextElementSibling
-      if ( nextrowafterscroll ) {
+      if ( nextrowafterscroll || end ) {
         clearInterval(intervalwaitingfornexrow)
+        clearTimeout(timeoutfornextrow)
         resolve()
       } else {
         console.log('Waiting for next row...')
-        clearTimeout(timeoutfornextrow)
       }
     }, 1000)
   })
 
   console.log('Next row after scroll')
 
-  return await loopboxes(nextrowafterscroll.firstElementChild, storage)
+  return end ? storage : await loopboxes(nextrowafterscroll.firstElementChild, storage)
 
 }
 
@@ -562,22 +562,24 @@ async function appendsorterbutton () {
   })
   commentssorterbutton.appendChild(commentssorterbuttonchild) // append comments sorter child into comments shorter button
 
+  const currentlimit = localStorage.getItem('limit')
+
   // setting attributes and content of comments sorter
   limitsorterbutton.setAttribute('class', 'x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1i64zmx x1n2onr6 x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1')
   limitsorterbutton.setAttribute('style', 'position: relative; right: 8px;')
   limitsorterbutton.innerHTML = `
   <select name="" id="sorter-limiter">
-    <option value="999999" selected>Unlimited</option>
-    <option value="3">Top 3</option>
-    <option value="6">Top 6</option>
-    <option value="9">Top 9</option>
-    <option value="12">Top 12</option>
-    <option value="15">Top 15</option>
-    <option value="18">Top 18</option>
-    <option value="21">Top 21</option>
-    <option value="24">Top 24</option>
-    <option value="27">Top 27</option>
-    <option value="30">Top 30</option>
+    <option value="999999">Unlimited</option>
+    <option value="3" ${currentlimit == 3 ? 'selected':''}>Top 3</option>
+    <option value="6" ${currentlimit == 6 ? 'selected':''}>Top 6</option>
+    <option value="9" ${currentlimit ==  9 ? 'selected':''}>Top 9</option>
+    <option value="12" ${currentlimit == 12 ? 'selected':''}>Top 12</option>
+    <option value="15" ${currentlimit == 15 ? 'selected':''}>Top 15</option>
+    <option value="18" ${currentlimit == 18 ? 'selected':''}>Top 18</option>
+    <option value="21" ${currentlimit == 21 ? 'selected':''}>Top 21</option>
+    <option value="24" ${currentlimit == 24 ? 'selected':''}>Top 24</option>
+    <option value="27" ${currentlimit == 27 ? 'selected':''}>Top 27</option>
+    <option value="30" ${currentlimit == 30 ? 'selected':''}>Top 30</option>
   </select>
   `
 
