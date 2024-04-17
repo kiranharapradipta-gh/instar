@@ -1,0 +1,9 @@
+.instar-button {
+  border: none; border-radius: 0.25rem; background: red; color: white; padding: 10px 20px; position: fixed; bottom: 20px; right: 20px;
+}
+
+.repost-button {
+  border: none;
+  background: none;
+  cursor: pointer;
+}

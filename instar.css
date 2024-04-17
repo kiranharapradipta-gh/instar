@@ -1,0 +1,33 @@
+/**
+ * write styles here
+ */
+
+html {
+  padding: 3px;
+}
+
+body {
+  background: #ea3c12;
+  color: white;
+  border: 1px solid white;
+  border-radius: 0.50rem;
+  padding: 10px;
+}
+
+img {
+  width: 600px;
+  height: 300px;
+  object-fit: cover;
+}
+
+div.text-container {
+  height: 10px;
+  display: flex;
+  font-family: monospace;
+}
+
+div.cursor {
+  min-width: 5px;
+  height: 20px;
+  background: white;
+}

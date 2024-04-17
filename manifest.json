@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "instar",
+  "version": "1.0",
+  "description": "Instagram arranger by Kiran Hara Pradipta. This extension helps you arrange Instagram posts as you want.",
+  "author": {
+    "name": "Kiran Hara Pradipta",
+    "email": "kiranharapradipta@gmail.com",
+    "homepage_url": "https://www.instagram.com/kiranharapradipta.ig"
+  },
+  "icons": {
+    "16":   "instar-icon.png",
+    "48":   "instar-icon.png",
+    "128":  "instar-icon.png"
+  },
+  "action":{
+    "default_icon": {
+      "16":   "instar-icon.png",
+      "48":   "instar-icon.png",
+      "128":  "instar-icon.png"
+    },
+    "default_title": "instar",
+    "default_popup": "instar.html"
+  },
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  "content_scripts": [
+    {
+      "js": ["scripts/instagram.js"],
+      "css": ["styles/instagram.css"],
+      "matches": [
+        "https://www.instagram.com/*"
+      ]
+    }
+  ],
+  "permissions": ["downloads","activeTab"]
+}
