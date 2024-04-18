@@ -1,3 +1,69 @@
+var localdb = {
+  db: null,
+
+  openDatabase: function() {
+    return new Promise((resolve, reject) => {
+      var request = indexedDB.open("LocalInfo", 1);
+
+      request.onerror = function(event) {
+        reject("Error opening database");
+      };
+
+      request.onsuccess = function(event) {
+        localdb.db = event.target.result;
+        resolve("Database opened successfully");
+      };
+
+      request.onupgradeneeded = function(event) {
+        var db = event.target.result;
+        db.createObjectStore("localinfo", { keyPath: null });
+      };
+    });
+  },
+
+  add: function(key, item) {
+    return new Promise((resolve, reject) => {
+      if (!localdb.db) {
+        reject("Database not opened");
+        return;
+      }
+
+      var transaction = localdb.db.transaction(["localinfo"], "readwrite");
+      var objectStore = transaction.objectStore("localinfo");
+      var addRequest = objectStore.add(item, key);
+
+      addRequest.onsuccess = function(event) {
+        resolve("Data added successfully");
+      };
+
+      addRequest.onerror = function(event) {
+        reject("Error adding data");
+      };
+    });
+  },
+
+  get: function(key) {
+    return new Promise((resolve, reject) => {
+      if (!localdb.db) {
+        reject("Database not opened");
+        return;
+      }
+
+      var transaction = localdb.db.transaction(["localinfo"], "readonly");
+      var objectStore = transaction.objectStore("localinfo");
+      var getRequest = objectStore.get(key);
+
+      getRequest.onsuccess = function(event) {
+        resolve(getRequest.result);
+      };
+
+      getRequest.onerror = function(event) {
+        reject("Error retrieving data");
+      };
+    });
+  }
+};
+
 function showfakeverified () {
 
   const pathname = window.location.pathname
@@ -111,56 +177,24 @@ async function loopboxes (box, storage=[]) {
 
   const username = window.location.pathname.split('/')?.[1]
   const boxlink = currentbox.firstElementChild
+  const linktype = boxlink?.getAttribute('href')?.split('/')?.[1]
 
-  // if ( !boxlink ) return await loopboxes(nextbox, storage)
+  const pathname = boxlink?.getAttribute('href')
 
-  const linkhref = boxlink?.getAttribute('href')
-  const linktype = linkhref?.split('/')?.[1]
+  await hold(1000)
 
-  const key = linkhref?.split('/')[2]
-
-  const localitem = localStorage.getItem(username)
-
-  let info
-
-  if ( key && localitem ) try {
-    info = JSON.parse(localitem)[key]
-  } catch (e) {
-    console.log('Failed to parse local item')
-  }
+  let info = await fetchinfo(username, pathname)
   
-  if ( key && linkhref && !info ) try {
-    const newinfodata = await fetchinfo(linkhref)
-    if ( !newinfodata ) return await loopboxes(nextbox, storage)
-
-    let userdatajson = localStorage.getItem(username)
-
-    if ( !userdatajson ) userdatajson = '{}'
-
-    const userdata = JSON.parse(userdatajson)
-
-    userdata[key] = newinfodata
-
-    const updateduserdatajson = JSON.stringify(userdata)
-
-    localStorage.setItem(username, updateduserdatajson)
-    info = newinfodata
-  } catch (e) {
-    console.error('Failed to fetch post info')
-    throw new Error(e)
-  }
-
-  const likes = info?.likes
-  const comments = info?.comments
+  const likes = parseInt(info.likes)
+  const comments = parseInt(info.comments)
   
-  if ( (likes || comments) && ((filter == linktype) || !filter || filter == 'all') ) {
+  if ( !filter || filter == 'all' || filter == linktype) {
     storage.push({
-      id: key,
-      likes: parseInt(likes),
-      comments: parseInt(comments),
+      likes,
+      comments,
       element: currentbox
     })
-    console.log('Progress:', storage.length + '/' + (limit > allpost ? allpost : limit), key, 'has', likes, 'likes and', comments, 'comments', info)
+    console.log('Progress:', storage.length + '/' + (limit > allpost ? allpost : limit), likes, 'likes and', comments, 'comments')
   } else console.log('Skipping this box')
 
   if ( nextbox ) return await loopboxes(nextbox, storage)
@@ -349,25 +383,71 @@ async function sort (field) {
   return console.log('Sorting', (limit > allpost ? allpost : limit) + '/' + allpost, 'posts by', field, 'finished in', elapsedtime, 'miliseconds')
 }
 
-async function fetchinfo (pathname) {
+async function fetchinfo (username, pathname) {
+
+  const key = pathname?.split('/')?.[2]
+  // const localinfojson = localStorage.getItem(username)
+  // const localinfox = JSON.parse(localinfojson)?.[key]
+
+  const localinfo = await new Promise((resolve, reject) => {
+    localdb.openDatabase()
+      .then(() => {
+        localdb.get(key)
+          .then(data => resolve(data))
+          .catch(error => reject(error))
+      })
+      .catch(error => reject(error))
+  })  
+
+  if ( localinfo ) {
+    console.log('Local info:', localinfo)
+    return localinfo
+  }
 
   const response = await fetch(pathname)
-  const text = await response.text()
+  const text = await response.text() 
+  const contentdescription = text.split('name="description" content="')[1].split(username)[0]
 
-  const username = text.split('(&#064;')?.[1]?.split(')')?.[0]
+  let likes, comments
 
-  if ( !username ) return
+  const likesorsuka = contentdescription.includes('likes') ? 'likes' : 'suka'
+  const commentsorkomentar = contentdescription.includes('comments') ? 'comments' : 'komentar'
 
-  const time = text.split(' ' + username)?.[1]?.split(':')?.[0]?.replace('on', '')?.trim()
-  
-  let [likes, comments] = text.split('name="description" content="')?.[1]?.split('-')?.[0]?.trim()?.split(', ')
+  likes = contentdescription.split(likesorsuka)[0]?.trim() || undefined
+  comments = contentdescription.split(commentsorkomentar)[0].split(`${likesorsuka}, `)[1]?.trim() || undefined
 
-  likes = likes.split(' ')?.[0]?.replace(/,/g, '').toLowerCase().replace('k', '000').replace('m', '000000').replace('rb', '000').replace('jt', '000000')
-  comments = comments.split(' ')?.[0]?.replace(/,/g, '').toLowerCase().replace('k', '000').replace('m', '000000').replace('rb', '000').replace('jt', '000000')
+  if ( !likes ) {
+    likes = 0
+  } else if ( likes.includes('K') ) {
+    const likeszero = likes.includes(',') ? '00' : '000'
+    likes = likes.replace('K', likeszero)
+  } else if ( likes.includes('M') ) {
+    const likeszero = likes.includes(',') ? '00000' : '000000'
+    likes = likes.replace('M', likeszero)
+  } else likes = likes.replace(',', '')
 
-  if ( !likes ) console.log('Text:', text)
+  if ( !comments ) {
+    comments = 0
+  } else if ( comments.includes('K') ) {
+    const commentszero = comments.includes(',') ? '00' : '000'
+    comments = comments.replace('K', commentszero)
+  } else if ( comments.includes('M') ) {
+    const likeszero = comments.includes(',') ? '00000' : '000000'
+    comments = comments.replace('M', likeszero)
+  } else comments = comments.replace(',', '')
 
-  return { username, time, likes, comments }
+  const newinfo = { username, likes, comments }
+
+  localdb
+  .openDatabase()
+  .then(() => localdb
+    .add(key, newinfo)
+    .then(message => console.log(message))
+    .catch(error => console.error(error))
+  )
+  .catch(error => console.error(error))
+
+  return newinfo
 
 }
 
