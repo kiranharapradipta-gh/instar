@@ -108,9 +108,11 @@ async function postimage(imageurls, caption) {
     })
     else await ig.publish.album(albumoptions)
     console.log(items.length == 1 ? 'Single post' : 'Album', 'published successfully!')
+    return true
   } catch (e) {
     console.error('Failed to publish the post. Try another one')
     console.error(e)
+    return false
   }
 }
 
@@ -135,8 +137,8 @@ app.post('/repost-image', async (req, res) => {
   try {
     const images = req.body.images
     const caption = req.body.caption
-    await postimage(images, caption)
-    res.end(JSON.stringify({ posted: true }))
+    const result = await postimage(images, caption)
+    res.end(JSON.stringify({ ok: result }))
   } catch (e) {
     console.log('Error!')
     console.log(e)
