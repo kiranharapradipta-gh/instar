@@ -44,6 +44,9 @@ var localdb = {
 
   get: function(key) {
     return new Promise((resolve, reject) => {
+
+      if ( !key ) reject(undefined)
+
       if (!localdb.db) {
         reject("Database not opened");
         return;
@@ -161,7 +164,7 @@ function checkifpostclosed () {
 
 }
 
-async function loopboxes (box, storage=[]) {
+async function loopboxes (box, storage=[], firstloop=false) {
 
   /**
    * row class: _ac7v xzboxd6 xras4av xgc1b0m
@@ -188,14 +191,35 @@ async function loopboxes (box, storage=[]) {
   const likes = parseInt(info.likes)
   const comments = parseInt(info.comments)
   
-  if ( !filter || filter == 'all' || filter == linktype) {
+  if ( !filter || filter == 'undefined' || filter == 'all' || filter == linktype) {
     storage.push({
       likes,
       comments,
       element: currentbox
     })
     console.log('Progress:', storage.length + '/' + (limit > allpost ? allpost : limit), likes, 'likes and', comments, 'comments')
-  } else console.log('Skipping this box')
+  } else {
+    console.log('Filter:', filter, typeof filter)
+    console.log('Skipping this box')
+  }
+
+  const progress = document.createElement('div')
+  const progressnumber = document.createElement('span')
+
+  progress.appendChild(progressnumber)
+  
+  if ( firstloop ) {
+    progressnumber.setAttribute('id', 'progress-number')
+    progressnumber.setAttribute('class', '_ac2a')
+
+    progress.setAttribute('style', 'align-items: center; position: fixed; right: 30px; bottom: 30px;')
+    progress.setAttribute('id', 'progress')
+    progress.setAttribute('class', '_acan _acap _acas _aj1- _ap30')
+
+    document.body.appendChild(progress)
+  }
+  
+  document.querySelector('#progress-number').innerHTML = storage.length + '/' + allpost
 
   if ( nextbox ) return await loopboxes(nextbox, storage)
 
@@ -282,6 +306,8 @@ async function populaterowcontainer (data, rowcontainer, row, lcr=0) {
 
 async function resetsorted (rowsarray) {
 
+  document.querySelector('#progress').remove()
+
   const currentrow = rowsarray.pop()
 
   if ( !currentrow ) return console.log('Post order reseted')
@@ -337,11 +363,11 @@ async function sort (field) {
   
   allpost = parseInt(allpostelement.innerText.split(' ')[0].replace(',', '').replace('.', ''))
   limit = localStorage.getItem('limit') ?? 999999
-  filter = localStorage.getItem('filter')
+  filter = localStorage.getItem('filter') ?? document.querySelector('#sorter-filter').value
 
   console.log('Sorting', (limit > allpost ? allpost : limit) + '/' + allpost, 'posts by', field)
 
-  const boxes       = await loopboxes()
+  const boxes       = await loopboxes(undefined /* box */, [] /* storage */, true /* firstloop */)
 
   if ( !boxes ) return console.error('Cannot sort posts!')
 
